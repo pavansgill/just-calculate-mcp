@@ -57,7 +57,11 @@ mod tests {
     use super::*;
 
     fn sf(v: f64, op: &str, b: Option<f64>) -> String {
-        special_functions(SpecialFunctionsInput { operation: op.to_string(), value: v, value_b: b })
+        special_functions(SpecialFunctionsInput {
+            operation: op.to_string(),
+            value: v,
+            value_b: b,
+        })
     }
 
     #[test]

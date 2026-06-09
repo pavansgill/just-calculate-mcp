@@ -5,16 +5,24 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct BaseConvertInput {
-    #[schemars(description = "Operation: decimal_to_binary, decimal_to_hex, decimal_to_octal, binary_to_decimal, hex_to_decimal, octal_to_decimal, to_base, from_base")]
+    #[schemars(
+        description = "Operation: decimal_to_binary, decimal_to_hex, decimal_to_octal, binary_to_decimal, hex_to_decimal, octal_to_decimal, to_base, from_base"
+    )]
     pub operation: String,
-    #[schemars(description = "Input value as string (to handle arbitrary bases and leading zeros)")]
+    #[schemars(
+        description = "Input value as string (to handle arbitrary bases and leading zeros)"
+    )]
     pub value: String,
-    #[schemars(description = "Target base for to_base (2-36), or source base for from_base (2-36)")]
+    #[schemars(
+        description = "Target base for to_base (2-36), or source base for from_base (2-36)"
+    )]
     pub base: Option<u32>,
 }
 
 fn to_base_str(mut n: u64, base: u32) -> String {
-    if n == 0 { return "0".to_string(); }
+    if n == 0 {
+        return "0".to_string();
+    }
     let digits: Vec<char> = "0123456789abcdefghijklmnopqrstuvwxyz".chars().collect();
     let mut result = Vec::new();
     while n > 0 {
@@ -86,11 +94,15 @@ pub fn base_convert(input: BaseConvertInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct BitwiseOpsInput {
-    #[schemars(description = "Operation: and, or, xor, not, left_shift, right_shift, rotate_left, rotate_right, popcount, bit_length, leading_zeros, trailing_zeros")]
+    #[schemars(
+        description = "Operation: and, or, xor, not, left_shift, right_shift, rotate_left, rotate_right, popcount, bit_length, leading_zeros, trailing_zeros"
+    )]
     pub operation: String,
     #[schemars(description = "First operand (64-bit unsigned integer)")]
     pub a: u64,
-    #[schemars(description = "Second operand or shift amount (required for and, or, xor, left_shift, right_shift, rotate_left, rotate_right)")]
+    #[schemars(
+        description = "Second operand or shift amount (required for and, or, xor, left_shift, right_shift, rotate_left, rotate_right)"
+    )]
     pub b: Option<u64>,
 }
 
@@ -124,7 +136,9 @@ pub fn bitwise_ops(input: BitwiseOpsInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct NumberReprInput {
-    #[schemars(description = "Operation: to_twos_complement, from_twos_complement, ascii_to_codepoint, codepoint_to_char, float_to_bits_hex")]
+    #[schemars(
+        description = "Operation: to_twos_complement, from_twos_complement, ascii_to_codepoint, codepoint_to_char, float_to_bits_hex"
+    )]
     pub operation: String,
     #[schemars(description = "Numeric input (integer or float depending on operation)")]
     pub value: f64,
@@ -185,32 +199,58 @@ mod tests {
     use super::*;
 
     fn bc(v: &str, op: &str, base: Option<u32>) -> String {
-        base_convert(BaseConvertInput { operation: op.to_string(), value: v.to_string(), base })
+        base_convert(BaseConvertInput {
+            operation: op.to_string(),
+            value: v.to_string(),
+            base,
+        })
     }
 
     #[test]
-    fn test_decimal_to_binary() { assert!(bc("10", "decimal_to_binary", None).contains("1010")); }
+    fn test_decimal_to_binary() {
+        assert!(bc("10", "decimal_to_binary", None).contains("1010"));
+    }
     #[test]
-    fn test_decimal_to_hex() { assert!(bc("255", "decimal_to_hex", None).contains("FF")); }
+    fn test_decimal_to_hex() {
+        assert!(bc("255", "decimal_to_hex", None).contains("FF"));
+    }
     #[test]
-    fn test_binary_to_decimal() { assert!(bc("1010", "binary_to_decimal", None).contains("10")); }
+    fn test_binary_to_decimal() {
+        assert!(bc("1010", "binary_to_decimal", None).contains("10"));
+    }
     #[test]
-    fn test_hex_to_decimal() { assert!(bc("FF", "hex_to_decimal", None).contains("255")); }
+    fn test_hex_to_decimal() {
+        assert!(bc("FF", "hex_to_decimal", None).contains("255"));
+    }
 
     fn bw(a: u64, op: &str, b: Option<u64>) -> String {
-        bitwise_ops(BitwiseOpsInput { operation: op.to_string(), a, b })
+        bitwise_ops(BitwiseOpsInput {
+            operation: op.to_string(),
+            a,
+            b,
+        })
     }
 
     #[test]
-    fn test_and() { assert!(bw(0b1100, "and", Some(0b1010)).contains("8")); }
+    fn test_and() {
+        assert!(bw(0b1100, "and", Some(0b1010)).contains("8"));
+    }
     #[test]
-    fn test_popcount() { assert!(bw(0b1010, "popcount", None).contains("2")); }
+    fn test_popcount() {
+        assert!(bw(0b1010, "popcount", None).contains("2"));
+    }
     #[test]
-    fn test_left_shift() { assert!(bw(1, "left_shift", Some(3)).contains("8")); }
+    fn test_left_shift() {
+        assert!(bw(1, "left_shift", Some(3)).contains("8"));
+    }
 
     #[test]
     fn test_float_bits() {
-        let r = number_repr(NumberReprInput { operation: "float_to_bits_hex".to_string(), value: 0.0, bits: None });
+        let r = number_repr(NumberReprInput {
+            operation: "float_to_bits_hex".to_string(),
+            value: 0.0,
+            bits: None,
+        });
         assert!(r.contains("0x00000000"), "{r}");
     }
 }

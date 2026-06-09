@@ -5,11 +5,15 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct VectorOpsInput {
-    #[schemars(description = "Operation: add, subtract, scalar_multiply, magnitude, normalize, dot_product, cross_product_3d, angle_between, projection")]
+    #[schemars(
+        description = "Operation: add, subtract, scalar_multiply, magnitude, normalize, dot_product, cross_product_3d, angle_between, projection"
+    )]
     pub operation: String,
     #[schemars(description = "First vector components")]
     pub a: Vec<f64>,
-    #[schemars(description = "Second vector (required for add, subtract, dot_product, cross_product_3d, angle_between, projection)")]
+    #[schemars(
+        description = "Second vector (required for add, subtract, dot_product, cross_product_3d, angle_between, projection)"
+    )]
     pub b: Option<Vec<f64>>,
     #[schemars(description = "Scalar (required for scalar_multiply)")]
     pub scalar: Option<f64>,
@@ -21,7 +25,9 @@ fn magnitude(v: &[f64]) -> f64 {
 
 pub fn vector_ops(input: VectorOpsInput) -> String {
     let a = &input.a;
-    if a.is_empty() { return "Error: vector a cannot be empty".to_string(); }
+    if a.is_empty() {
+        return "Error: vector a cannot be empty".to_string();
+    }
 
     let fmt_vec = |v: &[f64]| -> String {
         let parts: Vec<String> = v.iter().map(|x| x.to_string()).collect();
@@ -96,9 +102,13 @@ pub fn vector_ops(input: VectorOpsInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct MatrixOpsInput {
-    #[schemars(description = "Operation: add, multiply, scalar_multiply, transpose, determinant, inverse_2x2, trace, solve_2x2, solve_3x3")]
+    #[schemars(
+        description = "Operation: add, multiply, scalar_multiply, transpose, determinant, inverse_2x2, trace, solve_2x2, solve_3x3"
+    )]
     pub operation: String,
-    #[schemars(description = "Matrix A as row-major flat list. 2×2: [a,b,c,d], 3×3: [a,b,c,d,e,f,g,h,i]")]
+    #[schemars(
+        description = "Matrix A as row-major flat list. 2×2: [a,b,c,d], 3×3: [a,b,c,d,e,f,g,h,i]"
+    )]
     pub matrix_a: Vec<f64>,
     #[schemars(description = "Matrix B (required for add, multiply) — same format as matrix_a")]
     pub matrix_b: Option<Vec<f64>>,
@@ -108,22 +118,26 @@ pub struct MatrixOpsInput {
     pub rhs: Option<Vec<f64>>,
 }
 
-fn det2(m: &[f64]) -> f64 { m[0] * m[3] - m[1] * m[2] }
+fn det2(m: &[f64]) -> f64 {
+    m[0] * m[3] - m[1] * m[2]
+}
 
 fn det3(m: &[f64]) -> f64 {
-    m[0] * (m[4] * m[8] - m[5] * m[7])
-    - m[1] * (m[3] * m[8] - m[5] * m[6])
-    + m[2] * (m[3] * m[7] - m[4] * m[6])
+    m[0] * (m[4] * m[8] - m[5] * m[7]) - m[1] * (m[3] * m[8] - m[5] * m[6])
+        + m[2] * (m[3] * m[7] - m[4] * m[6])
 }
 
 pub fn matrix_ops(input: MatrixOpsInput) -> String {
     let a = &input.matrix_a;
 
     let fmt_mat = |m: &[f64], cols: usize| -> String {
-        m.chunks(cols).map(|row| {
-            let parts: Vec<String> = row.iter().map(|x| format!("{x:.4}")).collect();
-            format!("[{}]", parts.join(", "))
-        }).collect::<Vec<_>>().join(", ")
+        m.chunks(cols)
+            .map(|row| {
+                let parts: Vec<String> = row.iter().map(|x| format!("{x:.4}")).collect();
+                format!("[{}]", parts.join(", "))
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
     };
 
     match input.operation.as_str() {
@@ -207,17 +221,32 @@ mod tests {
     use super::*;
 
     fn vo(a: Vec<f64>, op: &str, b: Option<Vec<f64>>, s: Option<f64>) -> String {
-        vector_ops(VectorOpsInput { operation: op.to_string(), a, b, scalar: s })
+        vector_ops(VectorOpsInput {
+            operation: op.to_string(),
+            a,
+            b,
+            scalar: s,
+        })
     }
 
     #[test]
     fn test_dot_product() {
-        let r = vo(vec![1.0, 2.0, 3.0], "dot_product", Some(vec![4.0, 5.0, 6.0]), None);
+        let r = vo(
+            vec![1.0, 2.0, 3.0],
+            "dot_product",
+            Some(vec![4.0, 5.0, 6.0]),
+            None,
+        );
         assert!(r.contains("32"), "{r}");
     }
     #[test]
     fn test_cross_product() {
-        let r = vo(vec![1.0, 0.0, 0.0], "cross_product_3d", Some(vec![0.0, 1.0, 0.0]), None);
+        let r = vo(
+            vec![1.0, 0.0, 0.0],
+            "cross_product_3d",
+            Some(vec![0.0, 1.0, 0.0]),
+            None,
+        );
         assert!(r.contains("1") && r.contains("0"), "{r}");
     }
     #[test]
@@ -228,16 +257,22 @@ mod tests {
     #[test]
     fn test_determinant_2x2() {
         let r = matrix_ops(MatrixOpsInput {
-            operation: "determinant".to_string(), matrix_a: vec![1.0, 2.0, 3.0, 4.0],
-            matrix_b: None, scalar: None, rhs: None,
+            operation: "determinant".to_string(),
+            matrix_a: vec![1.0, 2.0, 3.0, 4.0],
+            matrix_b: None,
+            scalar: None,
+            rhs: None,
         });
         assert!(r.contains("-2"), "{r}");
     }
     #[test]
     fn test_solve_2x2() {
         let r = matrix_ops(MatrixOpsInput {
-            operation: "solve_2x2".to_string(), matrix_a: vec![2.0, 1.0, 1.0, 3.0],
-            matrix_b: None, scalar: None, rhs: Some(vec![5.0, 10.0]),
+            operation: "solve_2x2".to_string(),
+            matrix_a: vec![2.0, 1.0, 1.0, 3.0],
+            matrix_b: None,
+            scalar: None,
+            rhs: Some(vec![5.0, 10.0]),
         });
         assert!(r.contains("x = 1") || r.contains("x=1"), "{r}");
     }

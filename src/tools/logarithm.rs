@@ -58,7 +58,9 @@ pub fn logarithm(input: LogarithmInput) -> String {
             let result = (v / (1.0 - v)).ln();
             format!("logit({v}) = {result}")
         }
-        op => format!("Error: Unknown operation '{op}'. Supported: ln, log10, log2, log_base, log1p, logit"),
+        op => format!(
+            "Error: Unknown operation '{op}'. Supported: ln, log10, log2, log_base, log1p, logit"
+        ),
     }
 }
 
@@ -68,23 +70,43 @@ mod tests {
     use std::f64::consts::E;
 
     fn lg(v: f64, op: &str, base: Option<f64>) -> String {
-        logarithm(LogarithmInput { operation: op.to_string(), value: v, base })
+        logarithm(LogarithmInput {
+            operation: op.to_string(),
+            value: v,
+            base,
+        })
     }
 
     #[test]
-    fn test_ln() { assert!(lg(E, "ln", None).contains("1")); }
+    fn test_ln() {
+        assert!(lg(E, "ln", None).contains("1"));
+    }
     #[test]
-    fn test_log10() { assert!(lg(100.0, "log10", None).contains("2")); }
+    fn test_log10() {
+        assert!(lg(100.0, "log10", None).contains("2"));
+    }
     #[test]
-    fn test_log2() { assert!(lg(8.0, "log2", None).contains("3")); }
+    fn test_log2() {
+        assert!(lg(8.0, "log2", None).contains("3"));
+    }
     #[test]
-    fn test_log_base() { assert!(lg(8.0, "log_base", Some(2.0)).contains("3")); }
+    fn test_log_base() {
+        assert!(lg(8.0, "log_base", Some(2.0)).contains("3"));
+    }
     #[test]
-    fn test_log1p() { assert!(lg(0.0, "log1p", None).contains("0")); }
+    fn test_log1p() {
+        assert!(lg(0.0, "log1p", None).contains("0"));
+    }
     #[test]
-    fn test_logit_invalid() { assert!(lg(1.0, "logit", None).contains("Error")); }
+    fn test_logit_invalid() {
+        assert!(lg(1.0, "logit", None).contains("Error"));
+    }
     #[test]
-    fn test_logit_half() { assert!(lg(0.5, "logit", None).contains("0")); }
+    fn test_logit_half() {
+        assert!(lg(0.5, "logit", None).contains("0"));
+    }
     #[test]
-    fn test_ln_negative() { assert!(lg(-1.0, "ln", None).contains("Error")); }
+    fn test_ln_negative() {
+        assert!(lg(-1.0, "ln", None).contains("Error"));
+    }
 }

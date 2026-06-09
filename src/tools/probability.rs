@@ -1,9 +1,8 @@
 use schemars::JsonSchema;
 use serde::Deserialize;
 use statrs::distribution::{
-    Normal, ContinuousCDF, Continuous,
-    Binomial, DiscreteCDF, Discrete,
-    Poisson, Exp, Uniform, Geometric,
+    Binomial, Continuous, ContinuousCDF, Discrete, DiscreteCDF, Exp, Geometric, Normal, Poisson,
+    Uniform,
 };
 
 // ── Distribution ──────────────────────────────────────────────────────────────
@@ -12,13 +11,19 @@ use statrs::distribution::{
 pub struct DistributionInput {
     #[schemars(description = "Query type: pdf (or pmf), cdf, inverse_cdf")]
     pub query: String,
-    #[schemars(description = "Distribution name: normal, binomial, poisson, exponential, uniform, geometric")]
+    #[schemars(
+        description = "Distribution name: normal, binomial, poisson, exponential, uniform, geometric"
+    )]
     pub distribution: String,
     #[schemars(description = "x value for pdf/cdf, or probability p for inverse_cdf")]
     pub x: f64,
-    #[schemars(description = "Parameter 1: mean (normal), n trials (binomial), lambda (poisson/exponential), lower bound (uniform), p success (geometric)")]
+    #[schemars(
+        description = "Parameter 1: mean (normal), n trials (binomial), lambda (poisson/exponential), lower bound (uniform), p success (geometric)"
+    )]
     pub param1: f64,
-    #[schemars(description = "Parameter 2: std_dev (normal), p success (binomial), upper bound (uniform)")]
+    #[schemars(
+        description = "Parameter 2: std_dev (normal), p success (binomial), upper bound (uniform)"
+    )]
     pub param2: Option<f64>,
 }
 
@@ -130,9 +135,13 @@ pub fn distribution(input: DistributionInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct OddsConvertInput {
-    #[schemars(description = "Operation: probability_to_odds, odds_to_probability, fractional_to_decimal, decimal_to_fractional")]
+    #[schemars(
+        description = "Operation: probability_to_odds, odds_to_probability, fractional_to_decimal, decimal_to_fractional"
+    )]
     pub operation: String,
-    #[schemars(description = "Probability (0-1) for probability_to_odds; odds ratio for odds_to_probability; numerator/decimal odds for fractional_to_decimal/decimal_to_fractional")]
+    #[schemars(
+        description = "Probability (0-1) for probability_to_odds; odds ratio for odds_to_probability; numerator/decimal odds for fractional_to_decimal/decimal_to_fractional"
+    )]
     pub value: f64,
     #[schemars(description = "Denominator for fractional_to_decimal (e.g. 3 in '5/3' odds)")]
     pub denominator: Option<f64>,
@@ -169,30 +178,43 @@ mod tests {
     #[test]
     fn test_normal_pdf_mean() {
         let r = distribution(DistributionInput {
-            query: "pdf".to_string(), distribution: "normal".to_string(),
-            x: 0.0, param1: 0.0, param2: Some(1.0),
+            query: "pdf".to_string(),
+            distribution: "normal".to_string(),
+            x: 0.0,
+            param1: 0.0,
+            param2: Some(1.0),
         });
         assert!(r.contains("0.398") || r.contains("0.39"), "{r}");
     }
     #[test]
     fn test_normal_cdf_half() {
         let r = distribution(DistributionInput {
-            query: "cdf".to_string(), distribution: "normal".to_string(),
-            x: 0.0, param1: 0.0, param2: Some(1.0),
+            query: "cdf".to_string(),
+            distribution: "normal".to_string(),
+            x: 0.0,
+            param1: 0.0,
+            param2: Some(1.0),
         });
         assert!(r.contains("0.5"), "{r}");
     }
     #[test]
     fn test_uniform_cdf() {
         let r = distribution(DistributionInput {
-            query: "cdf".to_string(), distribution: "uniform".to_string(),
-            x: 5.0, param1: 0.0, param2: Some(10.0),
+            query: "cdf".to_string(),
+            distribution: "uniform".to_string(),
+            x: 5.0,
+            param1: 0.0,
+            param2: Some(10.0),
         });
         assert!(r.contains("0.5"), "{r}");
     }
     #[test]
     fn test_odds_probability() {
-        let r = odds_convert(OddsConvertInput { operation: "probability_to_odds".to_string(), value: 0.5, denominator: None });
+        let r = odds_convert(OddsConvertInput {
+            operation: "probability_to_odds".to_string(),
+            value: 0.5,
+            denominator: None,
+        });
         assert!(r.contains("0.5"), "{r}");
     }
 }

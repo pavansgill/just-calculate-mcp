@@ -44,7 +44,9 @@ pub fn power_root(input: PowerRootInput) -> String {
             };
             format!("{v}^{exp} = {}", v.powf(exp))
         }
-        op => format!("Error: Unknown operation '{op}'. Supported: square, cube, sqrt, cbrt, nth_root, pow"),
+        op => format!(
+            "Error: Unknown operation '{op}'. Supported: square, cube, sqrt, cbrt, nth_root, pow"
+        ),
     }
 }
 
@@ -74,27 +76,51 @@ mod tests {
     use super::*;
 
     fn pr(v: f64, op: &str, exp: Option<f64>) -> String {
-        power_root(PowerRootInput { operation: op.to_string(), value: v, exponent: exp })
+        power_root(PowerRootInput {
+            operation: op.to_string(),
+            value: v,
+            exponent: exp,
+        })
     }
 
     fn ex(v: f64, op: &str) -> String {
-        exponential(ExponentialInput { operation: op.to_string(), value: v })
+        exponential(ExponentialInput {
+            operation: op.to_string(),
+            value: v,
+        })
     }
 
     #[test]
-    fn test_square() { assert!(pr(4.0, "square", None).contains("16")); }
+    fn test_square() {
+        assert!(pr(4.0, "square", None).contains("16"));
+    }
     #[test]
-    fn test_sqrt() { assert!(pr(9.0, "sqrt", None).contains("3")); }
+    fn test_sqrt() {
+        assert!(pr(9.0, "sqrt", None).contains("3"));
+    }
     #[test]
-    fn test_sqrt_negative() { assert!(pr(-1.0, "sqrt", None).contains("Error")); }
+    fn test_sqrt_negative() {
+        assert!(pr(-1.0, "sqrt", None).contains("Error"));
+    }
     #[test]
-    fn test_cbrt() { assert!(pr(27.0, "cbrt", None).contains("3")); }
+    fn test_cbrt() {
+        assert!(pr(27.0, "cbrt", None).contains("3"));
+    }
     #[test]
-    fn test_pow() { assert!(pr(2.0, "pow", Some(10.0)).contains("1024")); }
+    fn test_pow() {
+        assert!(pr(2.0, "pow", Some(10.0)).contains("1024"));
+    }
     #[test]
-    fn test_nth_root() { assert!(pr(8.0, "nth_root", Some(3.0)).contains("2")); }
+    fn test_nth_root() {
+        assert!(pr(8.0, "nth_root", Some(3.0)).contains("2"));
+    }
     #[test]
-    fn test_exp() { let r = ex(0.0, "exp"); assert!(r.contains("1"), "{r}"); }
+    fn test_exp() {
+        let r = ex(0.0, "exp");
+        assert!(r.contains("1"), "{r}");
+    }
     #[test]
-    fn test_exp2() { assert!(ex(3.0, "exp2").contains("8")); }
+    fn test_exp2() {
+        assert!(ex(3.0, "exp2").contains("8"));
+    }
 }

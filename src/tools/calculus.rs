@@ -6,12 +6,22 @@ use serde::Deserialize;
 // e.g. [1, 2, 3] = 1 + 2x + 3x²
 
 fn eval_poly(coeffs: &[f64], x: f64) -> f64 {
-    coeffs.iter().enumerate().map(|(i, &c)| c * x.powi(i as i32)).sum()
+    coeffs
+        .iter()
+        .enumerate()
+        .map(|(i, &c)| c * x.powi(i as i32))
+        .sum()
 }
 
 fn differentiate(coeffs: &[f64]) -> Vec<f64> {
-    if coeffs.len() <= 1 { return vec![0.0]; }
-    coeffs[1..].iter().enumerate().map(|(i, &c)| c * (i as f64 + 1.0)).collect()
+    if coeffs.len() <= 1 {
+        return vec![0.0];
+    }
+    coeffs[1..]
+        .iter()
+        .enumerate()
+        .map(|(i, &c)| c * (i as f64 + 1.0))
+        .collect()
 }
 
 fn integrate_indefinite(coeffs: &[f64]) -> Vec<f64> {
@@ -23,13 +33,21 @@ fn integrate_indefinite(coeffs: &[f64]) -> Vec<f64> {
 }
 
 fn fmt_poly(coeffs: &[f64]) -> String {
-    if coeffs.iter().all(|&c| c == 0.0) { return "0".to_string(); }
-    let terms: Vec<String> = coeffs.iter().enumerate()
+    if coeffs.iter().all(|&c| c == 0.0) {
+        return "0".to_string();
+    }
+    let terms: Vec<String> = coeffs
+        .iter()
+        .enumerate()
         .filter(|(_, &c)| c != 0.0)
         .map(|(i, &c)| {
-            if i == 0 { format!("{c}") }
-            else if i == 1 { format!("{c}x") }
-            else { format!("{c}x^{i}") }
+            if i == 0 {
+                format!("{c}")
+            } else if i == 1 {
+                format!("{c}x")
+            } else {
+                format!("{c}x^{i}")
+            }
         })
         .collect();
     terms.join(" + ")
@@ -37,9 +55,13 @@ fn fmt_poly(coeffs: &[f64]) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct PolynomialCalcInput {
-    #[schemars(description = "Operation: evaluate, differentiate, integrate_indefinite, integrate_definite")]
+    #[schemars(
+        description = "Operation: evaluate, differentiate, integrate_indefinite, integrate_definite"
+    )]
     pub operation: String,
-    #[schemars(description = "Polynomial coefficients [c0, c1, c2, ...] where index i = power of x (e.g. [1, 0, 3] = 1 + 3x²)")]
+    #[schemars(
+        description = "Polynomial coefficients [c0, c1, c2, ...] where index i = power of x (e.g. [1, 0, 3] = 1 + 3x²)"
+    )]
     pub coefficients: Vec<f64>,
     #[schemars(description = "x value for evaluate, or lower bound for integrate_definite")]
     pub x: Option<f64>,
@@ -49,7 +71,9 @@ pub struct PolynomialCalcInput {
 
 pub fn polynomial_calc(input: PolynomialCalcInput) -> String {
     let c = &input.coefficients;
-    if c.is_empty() { return "Error: coefficients cannot be empty".to_string(); }
+    if c.is_empty() {
+        return "Error: coefficients cannot be empty".to_string();
+    }
 
     match input.operation.as_str() {
         "evaluate" => {
@@ -80,9 +104,13 @@ pub fn polynomial_calc(input: PolynomialCalcInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct NumericalMethodsInput {
-    #[schemars(description = "Operation: derivative_at_point, integrate_data, root_bisection_data")]
+    #[schemars(
+        description = "Operation: derivative_at_point, integrate_data, root_bisection_data"
+    )]
     pub operation: String,
-    #[schemars(description = "x values for derivative_at_point (5 equally-spaced points around target) or data x-axis for integrate_data/root_bisection_data")]
+    #[schemars(
+        description = "x values for derivative_at_point (5 equally-spaced points around target) or data x-axis for integrate_data/root_bisection_data"
+    )]
     pub x_values: Vec<f64>,
     #[schemars(description = "Corresponding y values (same length as x_values)")]
     pub y_values: Vec<f64>,
@@ -91,8 +119,12 @@ pub struct NumericalMethodsInput {
 pub fn numerical_methods(input: NumericalMethodsInput) -> String {
     let x = &input.x_values;
     let y = &input.y_values;
-    if x.len() != y.len() { return "Error: x_values and y_values must be same length".to_string(); }
-    if x.is_empty() { return "Error: values cannot be empty".to_string(); }
+    if x.len() != y.len() {
+        return "Error: x_values and y_values must be same length".to_string();
+    }
+    if x.is_empty() {
+        return "Error: values cannot be empty".to_string();
+    }
 
     match input.operation.as_str() {
         "derivative_at_point" => {
@@ -142,7 +174,12 @@ mod tests {
     use super::*;
 
     fn poly(coeffs: Vec<f64>, op: &str, x: Option<f64>, upper: Option<f64>) -> String {
-        polynomial_calc(PolynomialCalcInput { operation: op.to_string(), coefficients: coeffs, x, upper })
+        polynomial_calc(PolynomialCalcInput {
+            operation: op.to_string(),
+            coefficients: coeffs,
+            x,
+            upper,
+        })
     }
 
     #[test]

@@ -4,7 +4,9 @@ use std::f64::consts;
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct MathConstantInput {
-    #[schemars(description = "Constant name: pi, e, tau, phi, sqrt2, sqrt3, ln2, ln10, c, g, h, avogadro, boltzmann")]
+    #[schemars(
+        description = "Constant name: pi, e, tau, phi, sqrt2, sqrt3, ln2, ln10, c, g, h, avogadro, boltzmann"
+    )]
     pub name: String,
 }
 
@@ -41,21 +43,37 @@ mod tests {
     use super::*;
 
     fn mc(name: &str) -> String {
-        math_constant(MathConstantInput { name: name.to_string() })
+        math_constant(MathConstantInput {
+            name: name.to_string(),
+        })
     }
 
     #[test]
-    fn test_pi() { assert!(mc("pi").contains("3.14159")); }
+    fn test_pi() {
+        assert!(mc("pi").contains("3.14159"));
+    }
     #[test]
-    fn test_e() { assert!(mc("e").contains("2.71828")); }
+    fn test_e() {
+        assert!(mc("e").contains("2.71828"));
+    }
     #[test]
-    fn test_tau() { assert!(mc("tau").contains("6.28318")); }
+    fn test_tau() {
+        assert!(mc("tau").contains("6.28318"));
+    }
     #[test]
-    fn test_phi() { assert!(mc("phi").contains("1.61803")); }
+    fn test_phi() {
+        assert!(mc("phi").contains("1.61803"));
+    }
     #[test]
-    fn test_c() { assert!(mc("c").contains("299792458")); }
+    fn test_c() {
+        assert!(mc("c").contains("299792458"));
+    }
     #[test]
-    fn test_avogadro() { assert!(mc("avogadro").contains("6.02214")); }
+    fn test_avogadro() {
+        assert!(mc("avogadro").contains("6.02214"));
+    }
     #[test]
-    fn test_unknown() { assert!(mc("foo").contains("Error")); }
+    fn test_unknown() {
+        assert!(mc("foo").contains("Error"));
+    }
 }

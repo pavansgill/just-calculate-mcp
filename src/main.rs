@@ -1,7 +1,7 @@
 mod server;
 mod tools;
 
-use rmcp::{ServiceExt, transport::stdio};
+use rmcp::{transport::stdio, ServiceExt};
 use server::Calculator;
 
 #[tokio::main]

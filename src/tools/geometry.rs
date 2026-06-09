@@ -1,19 +1,23 @@
+use crate::tools::shared::deg_to_rad;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use std::f64::consts::PI;
-use crate::tools::shared::deg_to_rad;
 
 // ── 2D Area ───────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct Area2dInput {
-    #[schemars(description = "Shape: rectangle, square, triangle, triangle_heron, circle, sector, trapezoid, parallelogram, ellipse, regular_polygon")]
+    #[schemars(
+        description = "Shape: rectangle, square, triangle, triangle_heron, circle, sector, trapezoid, parallelogram, ellipse, regular_polygon"
+    )]
     pub shape: String,
     #[schemars(description = "a: width/base/radius/side-a depending on shape")]
     pub a: f64,
     #[schemars(description = "b: height/side-b/semi-minor/slant depending on shape")]
     pub b: Option<f64>,
-    #[schemars(description = "c: side-c (triangle_heron), angle in degrees (sector), number of sides (regular_polygon)")]
+    #[schemars(
+        description = "c: side-c (triangle_heron), angle in degrees (sector), number of sides (regular_polygon)"
+    )]
     pub c: Option<f64>,
 }
 
@@ -28,7 +32,9 @@ pub fn area_2d(input: Area2dInput) -> String {
         "triangle_heron" => {
             let s = (a + b() + c()) / 2.0;
             let area_sq = s * (s - a) * (s - b()) * (s - c());
-            if area_sq < 0.0 { return "Error: invalid triangle sides".to_string(); }
+            if area_sq < 0.0 {
+                return "Error: invalid triangle sides".to_string();
+            }
             format!("area = {}", area_sq.sqrt())
         }
         "circle" => format!("area = {}", PI * a * a),
@@ -41,7 +47,9 @@ pub fn area_2d(input: Area2dInput) -> String {
         "ellipse" => format!("area = {}", PI * a * b()),
         "regular_polygon" => {
             let n = c();
-            if n < 3.0 { return "Error: regular_polygon needs n >= 3 sides".to_string(); }
+            if n < 3.0 {
+                return "Error: regular_polygon needs n >= 3 sides".to_string();
+            }
             format!("area = {}", (n * a * a) / (4.0 * (PI / n).tan()))
         }
         s => format!("Error: Unknown shape '{s}'"),
@@ -52,7 +60,9 @@ pub fn area_2d(input: Area2dInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct Perimeter2dInput {
-    #[schemars(description = "Shape: rectangle, square, triangle, circle, ellipse_approx, regular_polygon")]
+    #[schemars(
+        description = "Shape: rectangle, square, triangle, circle, ellipse_approx, regular_polygon"
+    )]
     pub shape: String,
     #[schemars(description = "a: width/side-a/radius/semi-major")]
     pub a: f64,
@@ -146,7 +156,9 @@ pub fn surface_area_3d(input: SurfaceArea3dInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct Distance2dInput {
-    #[schemars(description = "Operation: euclidean, manhattan, midpoint_x, midpoint_y, slope, pythagorean, euclidean_3d")]
+    #[schemars(
+        description = "Operation: euclidean, manhattan, midpoint_x, midpoint_y, slope, pythagorean, euclidean_3d"
+    )]
     pub operation: String,
     #[schemars(description = "x1 (or a for pythagorean)")]
     pub x1: f64,
@@ -199,13 +211,17 @@ pub fn distance_2d(input: Distance2dInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct CoordinateConvertInput {
-    #[schemars(description = "Operation: cartesian_to_polar, polar_to_cartesian, cartesian_to_spherical, spherical_to_cartesian")]
+    #[schemars(
+        description = "Operation: cartesian_to_polar, polar_to_cartesian, cartesian_to_spherical, spherical_to_cartesian"
+    )]
     pub operation: String,
     #[schemars(description = "x (cartesian) or r (polar/spherical)")]
     pub a: f64,
     #[schemars(description = "y (cartesian) or theta in degrees (polar/spherical)")]
     pub b: f64,
-    #[schemars(description = "z (cartesian_to_spherical) or phi in degrees (spherical_to_cartesian)")]
+    #[schemars(
+        description = "z (cartesian_to_spherical) or phi in degrees (spherical_to_cartesian)"
+    )]
     pub c: Option<f64>,
 }
 
@@ -247,34 +263,57 @@ mod tests {
 
     #[test]
     fn test_circle_area() {
-        let r = area_2d(Area2dInput { shape: "circle".to_string(), a: 1.0, b: None, c: None });
+        let r = area_2d(Area2dInput {
+            shape: "circle".to_string(),
+            a: 1.0,
+            b: None,
+            c: None,
+        });
         assert!(r.contains("3.14"), "{r}");
     }
     #[test]
     fn test_sphere_volume() {
-        let r = volume_3d(Volume3dInput { shape: "sphere".to_string(), a: 1.0, b: None, c: None });
+        let r = volume_3d(Volume3dInput {
+            shape: "sphere".to_string(),
+            a: 1.0,
+            b: None,
+            c: None,
+        });
         assert!(r.contains("4.18") || r.contains("4.19"), "{r}");
     }
     #[test]
     fn test_pythagorean() {
         let r = distance_2d(Distance2dInput {
-            operation: "pythagorean".to_string(), x1: 3.0, y1: 4.0,
-            x2: None, y2: None, z1: None, z2: None,
+            operation: "pythagorean".to_string(),
+            x1: 3.0,
+            y1: 4.0,
+            x2: None,
+            y2: None,
+            z1: None,
+            z2: None,
         });
         assert!(r.contains("5"), "{r}");
     }
     #[test]
     fn test_euclidean() {
         let r = distance_2d(Distance2dInput {
-            operation: "euclidean".to_string(), x1: 0.0, y1: 0.0,
-            x2: Some(3.0), y2: Some(4.0), z1: None, z2: None,
+            operation: "euclidean".to_string(),
+            x1: 0.0,
+            y1: 0.0,
+            x2: Some(3.0),
+            y2: Some(4.0),
+            z1: None,
+            z2: None,
         });
         assert!(r.contains("5"), "{r}");
     }
     #[test]
     fn test_polar_roundtrip() {
         let cart = coordinate_convert(CoordinateConvertInput {
-            operation: "polar_to_cartesian".to_string(), a: 1.0, b: 0.0, c: None,
+            operation: "polar_to_cartesian".to_string(),
+            a: 1.0,
+            b: 0.0,
+            c: None,
         });
         assert!(cart.contains("x = 1"), "{cart}");
     }

@@ -6,7 +6,9 @@ use std::f64::consts::PI;
 pub struct UnitConvertInput {
     #[schemars(description = "Value to convert")]
     pub value: f64,
-    #[schemars(description = "Source unit (e.g. km, lb, fahrenheit, hours, mph, MB, psi, joule, watt, newton, degrees)")]
+    #[schemars(
+        description = "Source unit (e.g. km, lb, fahrenheit, hours, mph, MB, psi, joule, watt, newton, degrees)"
+    )]
     pub from_unit: String,
     #[schemars(description = "Target unit (same family as from_unit)")]
     pub to_unit: String,
@@ -205,8 +207,15 @@ pub fn unit_convert(input: UnitConvertInput) -> String {
 }
 
 fn convert_temperature(value: f64, from: &str, to: &str) -> Option<String> {
-    let is_temp = |u: &str| matches!(u, "celsius" | "c" | "fahrenheit" | "f" | "kelvin" | "k" | "rankine" | "r");
-    if !is_temp(from) && !is_temp(to) { return None; }
+    let is_temp = |u: &str| {
+        matches!(
+            u,
+            "celsius" | "c" | "fahrenheit" | "f" | "kelvin" | "k" | "rankine" | "r"
+        )
+    };
+    if !is_temp(from) && !is_temp(to) {
+        return None;
+    }
 
     let celsius = match from {
         "celsius" | "c" => value,
@@ -232,22 +241,36 @@ mod tests {
     use super::*;
 
     fn conv(v: f64, from: &str, to: &str) -> String {
-        unit_convert(UnitConvertInput { value: v, from_unit: from.to_string(), to_unit: to.to_string() })
+        unit_convert(UnitConvertInput {
+            value: v,
+            from_unit: from.to_string(),
+            to_unit: to.to_string(),
+        })
     }
 
     #[test]
-    fn test_km_to_m() { assert!(conv(1.0, "km", "m").contains("1000")); }
+    fn test_km_to_m() {
+        assert!(conv(1.0, "km", "m").contains("1000"));
+    }
     #[test]
-    fn test_celsius_to_fahrenheit() { assert!(conv(0.0, "celsius", "fahrenheit").contains("32")); }
+    fn test_celsius_to_fahrenheit() {
+        assert!(conv(0.0, "celsius", "fahrenheit").contains("32"));
+    }
     #[test]
-    fn test_celsius_to_kelvin() { assert!(conv(0.0, "celsius", "kelvin").contains("273.15")); }
+    fn test_celsius_to_kelvin() {
+        assert!(conv(0.0, "celsius", "kelvin").contains("273.15"));
+    }
     #[test]
     fn test_kg_to_lb() {
         let r = conv(1.0, "kg", "lb");
         assert!(r.contains("2.2") || r.contains("2.20"), "{r}");
     }
     #[test]
-    fn test_incompatible() { assert!(conv(1.0, "km", "kg").contains("Error")); }
+    fn test_incompatible() {
+        assert!(conv(1.0, "km", "kg").contains("Error"));
+    }
     #[test]
-    fn test_mb_to_kb() { assert!(conv(1.0, "MB", "KB").contains("1000")); }
+    fn test_mb_to_kb() {
+        assert!(conv(1.0, "MB", "KB").contains("1000"));
+    }
 }

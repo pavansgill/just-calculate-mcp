@@ -11,24 +11,63 @@
 /// Category name → the tool names registered under it (must match the
 /// `#[tool]` method names in `server.rs`).
 pub const CATEGORIES: &[(&str, &[&str])] = &[
-    ("arithmetic", &["simple_arithmetic", "rounding", "number_properties"]),
+    (
+        "arithmetic",
+        &["simple_arithmetic", "rounding", "number_properties"],
+    ),
     ("powers", &["power_root", "exponential"]),
     ("logarithm", &["logarithm"]),
-    ("trigonometry", &["trigonometry", "trigonometry_2arg", "hyperbolic", "angle_convert"]),
-    ("statistics", &["descriptive_stats", "percentile", "correlation", "linear_regression"]),
+    (
+        "trigonometry",
+        &[
+            "trigonometry",
+            "trigonometry_2arg",
+            "hyperbolic",
+            "angle_convert",
+        ],
+    ),
+    (
+        "statistics",
+        &[
+            "descriptive_stats",
+            "percentile",
+            "correlation",
+            "linear_regression",
+        ],
+    ),
     ("combinatorics", &["combinatorics"]),
     ("number_theory", &["number_theory", "modular_arithmetic"]),
-    ("finance", &[
-        "present_future_value", "interest_rate", "loan", "investment_return",
-        "depreciation", "business_math",
-    ]),
-    ("geometry", &[
-        "area_2d", "perimeter_2d", "volume_3d", "surface_area_3d",
-        "distance_2d", "coordinate_convert",
-    ]),
-    ("programmer", &["base_convert", "bitwise_ops", "number_repr"]),
+    (
+        "finance",
+        &[
+            "present_future_value",
+            "interest_rate",
+            "loan",
+            "investment_return",
+            "depreciation",
+            "business_math",
+        ],
+    ),
+    (
+        "geometry",
+        &[
+            "area_2d",
+            "perimeter_2d",
+            "volume_3d",
+            "surface_area_3d",
+            "distance_2d",
+            "coordinate_convert",
+        ],
+    ),
+    (
+        "programmer",
+        &["base_convert", "bitwise_ops", "number_repr"],
+    ),
     ("unit_convert", &["unit_convert"]),
-    ("engineering", &["complex_number", "electrical", "decibel", "interpolation"]),
+    (
+        "engineering",
+        &["complex_number", "electrical", "decibel", "interpolation"],
+    ),
     ("linear_algebra", &["vector_ops", "matrix_ops"]),
     ("calculus", &["polynomial_calc", "numerical_methods"]),
     ("probability", &["distribution", "odds_convert"]),
