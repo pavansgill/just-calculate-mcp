@@ -17,3 +17,8 @@ anyhow = "1"
 libm = "0.2"
 nalgebra = "0.33"
 statrs = "0.17"
+
+[dev-dependencies]
+# `client` feature is test-only: it powers the in-memory client/server
+# integration test for the toggle/act gating in src/server.rs.
+rmcp = { version = "1.7", features = ["server", "client"] }

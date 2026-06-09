@@ -11,6 +11,7 @@ pub mod number_theory;
 pub mod powers;
 pub mod probability;
 pub mod programmer;
+pub mod registry;
 pub mod shared;
 pub mod special_functions;
 pub mod statistics;
