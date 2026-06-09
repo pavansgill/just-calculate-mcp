@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # Rust crate dependencies (Cargo.toml / Cargo.lock)
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: deps
+    # Bundle routine version bumps into a single PR to cut noise.
+    groups:
+      cargo-dependencies:
+        patterns:
+          - "*"
+
+  # Keep the GitHub Actions used in .github/workflows up to date
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - "*"
