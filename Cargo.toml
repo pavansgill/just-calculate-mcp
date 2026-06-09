@@ -2,6 +2,13 @@
 name = "just-calculate-mcp"
 version = "0.1.0"
 edition = "2021"
+authors = ["Pavan Singh Gill"]
+license = "Apache-2.0"
+description = "A Rust MCP server exposing many math tools, with a toggle/act gating layer that keeps the client tool list tiny while staying fully discoverable."
+repository = "https://github.com/pavansgill/just-calculate-mcp"
+readme = "README.md"
+keywords = ["mcp", "calculator", "math", "tool-gating", "rmcp"]
+categories = ["mathematics", "command-line-utilities"]
 
 [[bin]]
 name = "just-calculate-mcp"
