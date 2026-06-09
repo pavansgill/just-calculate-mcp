@@ -73,14 +73,14 @@ pub fn base_convert(input: BaseConvertInput) -> String {
             }
         }
         "to_base" => {
-            let base = match input.base { Some(b) if b >= 2 && b <= 36 => b, _ => return "Error: base must be 2-36".to_string() };
+            let base = match input.base { Some(b) if (2..=36).contains(&b) => b, _ => return "Error: base must be 2-36".to_string() };
             match v.parse::<u64>() {
                 Ok(n) => format!("{n} (base 10) = {} (base {base})", to_base_str(n, base)),
                 Err(_) => "Error: value must be a non-negative integer".to_string(),
             }
         }
         "from_base" => {
-            let base = match input.base { Some(b) if b >= 2 && b <= 36 => b, _ => return "Error: base must be 2-36".to_string() };
+            let base = match input.base { Some(b) if (2..=36).contains(&b) => b, _ => return "Error: base must be 2-36".to_string() };
             match u64::from_str_radix(&v, base) {
                 Ok(n) => format!("{} (base {base}) = {n} (base 10)", input.value),
                 Err(_) => format!("Error: value '{}' is not valid in base {base}", input.value),

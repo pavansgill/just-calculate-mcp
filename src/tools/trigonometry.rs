@@ -44,12 +44,12 @@ pub fn trigonometry(input: TrigInput) -> String {
             format!("cot({v} {unit}) = {}", angle_rad.cos() / s)
         }
         "asin" => {
-            if v < -1.0 || v > 1.0 { return "Error: asin domain is [-1, 1]".to_string(); }
+            if !(-1.0..=1.0).contains(&v) { return "Error: asin domain is [-1, 1]".to_string(); }
             let r = v.asin();
             format!("asin({v}) = {} radians = {} degrees", r, rad_to_deg(r))
         }
         "acos" => {
-            if v < -1.0 || v > 1.0 { return "Error: acos domain is [-1, 1]".to_string(); }
+            if !(-1.0..=1.0).contains(&v) { return "Error: acos domain is [-1, 1]".to_string(); }
             let r = v.acos();
             format!("acos({v}) = {} radians = {} degrees", r, rad_to_deg(r))
         }

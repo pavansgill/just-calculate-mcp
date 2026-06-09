@@ -14,7 +14,7 @@ fn sorted(vals: &[f64]) -> Vec<f64> {
 fn median_of(vals: &[f64]) -> f64 {
     let s = sorted(vals);
     let n = s.len();
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         (s[n / 2 - 1] + s[n / 2]) / 2.0
     } else {
         s[n / 2]
@@ -103,7 +103,7 @@ pub fn descriptive_stats(input: DescriptiveStatsInput) -> String {
             format!("geometric_mean = {result}")
         }
         "harmonic_mean" => {
-            if vals.iter().any(|&x| x == 0.0) {
+            if vals.contains(&0.0) {
                 return "Error: harmonic_mean requires all values ≠ 0".to_string();
             }
             let result = vals.len() as f64 / vals.iter().map(|x| 1.0 / x).sum::<f64>();
@@ -212,7 +212,7 @@ pub fn percentile(input: PercentileInput) -> String {
     match input.operation.as_str() {
         "percentile" => {
             let p = input.parameter;
-            if p < 0.0 || p > 100.0 {
+            if !(0.0..=100.0).contains(&p) {
                 return "Error: p must be 0-100".to_string();
             }
             format!("P{p} = {}", percentile_of(&s, p))
@@ -424,7 +424,7 @@ mod tests {
             y_values: vec![2.0, 4.0, 6.0],
         });
         // Perfect correlation — result should be within floating-point epsilon of 1
-        let val: f64 = r.split('=').last().unwrap().trim().parse().unwrap();
+        let val: f64 = r.split('=').next_back().unwrap().trim().parse().unwrap();
         assert!((val - 1.0).abs() < 1e-10, "expected ~1, got {r}");
     }
     #[test]

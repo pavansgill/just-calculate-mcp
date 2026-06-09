@@ -242,7 +242,7 @@ mod tests {
     }
     #[test]
     fn test_round_dp() {
-        assert!(rnd(3.14159, "round_dp", Some(2)).contains("3.14"));
+        assert!(rnd(5.678, "round_dp", Some(2)).contains("5.68"));
     }
 
     fn prop(v: f64, op: &str, b: Option<f64>, c: Option<f64>) -> String {

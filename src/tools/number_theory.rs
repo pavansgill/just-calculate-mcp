@@ -9,12 +9,12 @@ fn is_prime_impl(n: u64) -> bool {
     if n == 2 {
         return true;
     }
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         return false;
     }
     let mut i = 3u64;
     while i * i <= n {
-        if n % i == 0 {
+        if n.is_multiple_of(i) {
             return false;
         }
         i += 2;
@@ -26,7 +26,7 @@ fn prime_factors_impl(mut n: u64) -> Vec<u64> {
     let mut factors = Vec::new();
     let mut d = 2u64;
     while d * d <= n {
-        while n % d == 0 {
+        while n.is_multiple_of(d) {
             factors.push(d);
             n /= d;
         }
@@ -110,7 +110,7 @@ pub fn number_theory(input: NumberTheoryInput) -> String {
             format!("prime #{n} = {candidate}")
         }
         "divisors" => {
-            let mut divs: Vec<u64> = (1..=n).filter(|&d| n % d == 0).collect();
+            let mut divs: Vec<u64> = (1..=n).filter(|&d| n.is_multiple_of(d)).collect();
             divs.sort();
             format!(
                 "divisors({n}) = [{}]",
@@ -121,11 +121,11 @@ pub fn number_theory(input: NumberTheoryInput) -> String {
             )
         }
         "divisor_count" => {
-            let count = (1..=n).filter(|&d| n % d == 0).count();
+            let count = (1..=n).filter(|&d| n.is_multiple_of(d)).count();
             format!("divisor_count({n}) = {count}")
         }
         "sum_of_divisors" => {
-            let sum: u64 = (1..=n).filter(|&d| n % d == 0).sum();
+            let sum: u64 = (1..=n).filter(|&d| n.is_multiple_of(d)).sum();
             format!("sum_of_divisors({n}) = {sum}")
         }
         "euler_totient" => {

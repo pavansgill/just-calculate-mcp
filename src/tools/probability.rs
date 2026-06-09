@@ -105,7 +105,7 @@ pub fn distribution(input: DistributionInput) -> String {
                 "pdf" => format!("Uniform({p1}, {p2}) pdf({x}) = {}", dist.pdf(x)),
                 "cdf" => format!("Uniform({p1}, {p2}) cdf({x}) = {}", dist.cdf(x)),
                 "inverse_cdf" => {
-                    if x < 0.0 || x > 1.0 { return "Error: inverse_cdf requires 0 <= x <= 1".to_string(); }
+                    if !(0.0..=1.0).contains(&x) { return "Error: inverse_cdf requires 0 <= x <= 1".to_string(); }
                     format!("Uniform({p1}, {p2}) inverse_cdf({x}) = {}", dist.inverse_cdf(x))
                 }
                 q => format!("Error: Unknown query '{q}'. Supported: pdf, cdf, inverse_cdf"),
