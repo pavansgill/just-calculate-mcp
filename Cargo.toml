@@ -2,6 +2,13 @@
 name = "just-calculate-mcp"
 version = "0.1.0"
 edition = "2021"
+authors = ["Pavan Singh Gill"]
+license = "Apache-2.0"
+description = "A Rust MCP server exposing many math tools, with a toggle/act gating layer that keeps the client tool list tiny while staying fully discoverable."
+repository = "https://github.com/pavansgill/just-calculate-mcp"
+readme = "README.md"
+keywords = ["mcp", "calculator", "math", "tool-gating", "rmcp"]
+categories = ["mathematics", "command-line-utilities"]
 
 [[bin]]
 name = "just-calculate-mcp"
@@ -17,3 +24,8 @@ anyhow = "1"
 libm = "0.2"
 nalgebra = "0.33"
 statrs = "0.17"
+
+[dev-dependencies]
+# `client` feature is test-only: it powers the in-memory client/server
+# integration test for the toggle/act gating in src/server.rs.
+rmcp = { version = "1.7", features = ["server", "client"] }

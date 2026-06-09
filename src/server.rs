@@ -1,10 +1,27 @@
-use rmcp::{
-    ServerHandler,
-    handler::server::{router::tool::ToolRouter, wrapper::Parameters},
-    model::{ServerCapabilities, ServerInfo},
-    tool, tool_handler, tool_router,
-};
+use std::sync::Arc;
 
+use rmcp::{
+    ErrorData as McpError, RoleServer, ServerHandler,
+    handler::server::{
+        router::tool::ToolRouter,
+        tool::ToolCallContext,
+        wrapper::Parameters,
+    },
+    model::{
+        AnnotateAble, CallToolRequestParams, CallToolResult, Content, JsonObject,
+        ListResourcesResult, ListToolsResult, PaginatedRequestParams, RawResource,
+        ReadResourceRequestParams, ReadResourceResult, ResourceContents, ServerCapabilities,
+        ServerInfo,
+    },
+    service::{MaybeSendFuture, NotificationContext, Peer, RequestContext},
+    tool, tool_router,
+};
+use schemars::JsonSchema;
+use serde::Deserialize;
+use serde::de::DeserializeOwned;
+use tokio::sync::RwLock;
+
+use crate::tools::registry;
 use crate::tools::arithmetic::{ArithmeticInput, RoundingInput, NumberPropertiesInput, compute, round, number_properties};
 use crate::tools::calculus::{NumericalMethodsInput, PolynomialCalcInput, numerical_methods, polynomial_calc};
 use crate::tools::combinatorics::{CombinatoricsInput, combinatorics};
@@ -23,21 +40,88 @@ use crate::tools::statistics::{CorrelationInput, DescriptiveStatsInput, LinearRe
 use crate::tools::trigonometry::{AngleConvertInput, HyperbolicInput, Trig2ArgInput, TrigInput, angle_convert, hyperbolic, trigonometry, trigonometry_2arg};
 use crate::tools::unit_convert::{UnitConvertInput, unit_convert};
 
-#[derive(Debug, Clone)]
+/// URI of the usage-guide resource (explains `toggle` vs `act`).
+const GUIDE_URI: &str = "calc://guide";
+
+#[derive(Clone)]
 pub struct Calculator {
-    tool_router: ToolRouter<Self>,
+    /// The toggleable set used by `list_tools` and normal `call_tool`. All
+    /// domain tools start disabled; only `toggle` + `act` are visible until a
+    /// client toggles a category on. Behind `RwLock` because toggling mutates
+    /// it through `&self`; behind `Arc` so clones share the same state.
+    visible: Arc<RwLock<ToolRouter<Self>>>,
+    /// The full router with every tool enabled, used only by `act` so a one-off
+    /// proxy call works regardless of what is toggled on. Reuses the exact same
+    /// route closures — no second dispatch table to maintain.
+    full: Arc<ToolRouter<Self>>,
+    /// This client's peer, captured on initialization, so `toggle` can emit a
+    /// single `tools/list_changed` per command (rather than one per route).
+    peer: Arc<std::sync::OnceLock<Peer<RoleServer>>>,
 }
 
 impl Calculator {
     pub fn new() -> Self {
+        let full_router = Self::tool_router();
+
+        // Start with every non-meta tool hidden — only `toggle`/`act` are
+        // visible by default. Driving this off the router's own keys means a
+        // newly added tool is hidden automatically. No peer is bound yet, so
+        // these disables are silent.
+        let mut visible_router = full_router.clone();
+        let routed: Vec<String> = visible_router.map.keys().map(|k| k.to_string()).collect();
+        for name in routed {
+            if !registry::META_TOOLS.contains(&name.as_str()) {
+                visible_router.disable_route(name);
+            }
+        }
+
         Self {
-            tool_router: Self::tool_router(),
+            visible: Arc::new(RwLock::new(visible_router)),
+            full: Arc::new(full_router),
+            peer: Arc::new(std::sync::OnceLock::new()),
         }
     }
 }
 
+fn default_true() -> bool {
+    true
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct ToggleInput {
+    #[schemars(description = "What to toggle: a category (e.g. \"geometry\"), a single tool name (e.g. \"area_2d\"), or \"all\". Read the calc://guide resource for the catalog.")]
+    pub target: String,
+    #[serde(default = "default_true")]
+    #[schemars(description = "true to reveal the tool(s), false to hide them again. Defaults to true.")]
+    pub on: bool,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct ActInput {
+    #[schemars(description = "Name of the calculator tool to invoke (e.g. \"area_2d\"). See the calc://guide resource for names and their arguments.")]
+    pub tool: String,
+    #[serde(default)]
+    #[schemars(description = "Arguments object for that tool, matching its schema, e.g. {\"shape\":\"circle\",\"radius\":3}.")]
+    pub args: serde_json::Value,
+}
+
 #[tool_router]
 impl Calculator {
+    // ── Meta-tools (always visible; dispatched directly in call_tool) ─────────
+    // NOTE: these two bodies are never executed. `call_tool` intercepts
+    // "toggle"/"act" by name and handles them itself (see ServerHandler impl)
+    // to avoid a read-vs-write deadlock on `visible`. They exist only so the
+    // `#[tool_router]` macro publishes their input schemas into the tool list.
+    #[tool(description = "Reveal or hide calculator tools so they (don't) appear in the tool list. Pass a category like \"geometry\", a single tool name, or \"all\", plus on=true/false. Use this when you'll make several related calls. Read the calc://guide resource first to see what's available.")]
+    pub fn toggle(&self, Parameters(_input): Parameters<ToggleInput>) -> String {
+        "toggle is handled by the dispatcher".to_string()
+    }
+
+    #[tool(description = "One-shot proxy: call any calculator tool by name without revealing it in the tool list. Provide {tool, args}. Works even if the tool is toggled off. Use for quick one-off calculations; use toggle instead for repeated calls. See the calc://guide resource for tool names and argument shapes.")]
+    pub fn act(&self, Parameters(_input): Parameters<ActInput>) -> String {
+        "act is handled by the dispatcher".to_string()
+    }
+
     // ── Arithmetic ────────────────────────────────────────────────────────────
     #[tool(description = "Perform a simple arithmetic operation (+, -, *, /, %) on two numbers")]
     pub fn simple_arithmetic(&self, Parameters(input): Parameters<ArithmeticInput>) -> String { compute(input) }
@@ -191,10 +275,315 @@ impl Calculator {
     pub fn math_constant(&self, Parameters(input): Parameters<MathConstantInput>) -> String { math_constant(input) }
 }
 
-#[tool_handler(router = self.tool_router)]
+/// Deserialize a tool-call's `arguments` object into a typed input struct.
+fn parse_args<T: DeserializeOwned>(args: Option<JsonObject>) -> Result<T, McpError> {
+    let value = serde_json::Value::Object(args.unwrap_or_default());
+    serde_json::from_value(value).map_err(|e| McpError::invalid_params(e.to_string(), None))
+}
+
+impl Calculator {
+    /// Handle the `toggle` meta-tool: reveal or hide the resolved tools in the
+    /// `visible` router. Mutating it fires `notifications/tools/list_changed`
+    /// automatically via the peer notifier bound in `on_initialized`.
+    async fn handle_toggle(&self, request: CallToolRequestParams) -> Result<CallToolResult, McpError> {
+        let input: ToggleInput = parse_args(request.arguments)?;
+        let names = registry::resolve(&input.target);
+        if names.is_empty() {
+            return Ok(CallToolResult::error(vec![Content::text(format!(
+                "Unknown target '{}'. Use a category, a single tool name, or \"all\" — see the {GUIDE_URI} resource.",
+                input.target
+            ))]));
+        }
+
+        {
+            let mut router = self.visible.write().await;
+            for name in names.iter().copied() {
+                if input.on {
+                    router.enable_route(name);
+                } else {
+                    router.disable_route(name);
+                }
+            }
+        } // drop the write guard
+
+        // One notification per command, not one per route.
+        if let Some(peer) = self.peer.get() {
+            let _ = peer.notify_tool_list_changed().await;
+        }
+
+        let verb = if input.on { "Enabled" } else { "Disabled" };
+        Ok(CallToolResult::success(vec![Content::text(format!(
+            "{verb} {} tool(s): {}",
+            names.len(),
+            names.join(", ")
+        ))]))
+    }
+
+    /// Handle the `act` meta-tool: proxy a one-off call to any domain tool via
+    /// the always-enabled `full` router, regardless of toggle state.
+    async fn handle_act(
+        &self,
+        request: CallToolRequestParams,
+        context: RequestContext<RoleServer>,
+    ) -> Result<CallToolResult, McpError> {
+        let input: ActInput = parse_args(request.arguments)?;
+        if !registry::is_tool(&input.tool) {
+            return Ok(CallToolResult::error(vec![Content::text(format!(
+                "'{}' is not a callable calculator tool. See the {GUIDE_URI} resource for valid names.",
+                input.tool
+            ))]));
+        }
+
+        let arguments = match input.args {
+            serde_json::Value::Object(map) => Some(map),
+            serde_json::Value::Null => None,
+            // Some MCP bridges double-encode objects as JSON strings; unwrap transparently.
+            serde_json::Value::String(s) => match serde_json::from_str::<serde_json::Value>(&s) {
+                Ok(serde_json::Value::Object(map)) => Some(map),
+                _ => {
+                    return Ok(CallToolResult::error(vec![Content::text(format!(
+                        "act \"args\" must be a JSON object (or omitted), got string: \"{s}\""
+                    ))]));
+                }
+            },
+            other => {
+                return Ok(CallToolResult::error(vec![Content::text(format!(
+                    "act \"args\" must be a JSON object (or omitted), got: {other}"
+                ))]));
+            }
+        };
+
+        let mut inner = CallToolRequestParams::new(input.tool);
+        inner.arguments = arguments;
+        let tcc = ToolCallContext::new(self, inner, context);
+        self.full.call(tcc).await
+    }
+}
+
 impl ServerHandler for Calculator {
     fn get_info(&self) -> ServerInfo {
-        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
-            .with_instructions("A calculator MCP server covering arithmetic, trigonometry, statistics, finance, geometry, programming utilities, and more.")
+        ServerInfo::new(
+            ServerCapabilities::builder()
+                .enable_tools()
+                .enable_tool_list_changed()
+                .enable_resources()
+                .build(),
+        )
+        .with_instructions(
+            "A calculator covering arithmetic, trig, statistics, finance, geometry, programming \
+utilities, and more — but only two tools are visible by default: `toggle` and `act`. First read \
+the calc://guide resource to see all categories. Then either `toggle` a category on to reveal its \
+tools (validated schemas; best for repeated calls), or use `act` to invoke a tool once without \
+revealing it.",
+        )
+    }
+
+    async fn list_tools(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListToolsResult, McpError> {
+        let router = self.visible.read().await;
+        Ok(ListToolsResult::with_all_items(router.list_all()))
+    }
+
+    async fn call_tool(
+        &self,
+        request: CallToolRequestParams,
+        context: RequestContext<RoleServer>,
+    ) -> Result<CallToolResult, McpError> {
+        // Intercept the meta-tools by name *before* locking `visible` for
+        // dispatch — `toggle` needs a write lock, which would deadlock against
+        // a read guard held across `router.call().await`.
+        match request.name.as_ref() {
+            "toggle" => self.handle_toggle(request).await,
+            "act" => self.handle_act(request, context).await,
+            _ => {
+                let router = self.visible.read().await;
+                if registry::is_tool(&request.name) && !router.has_route(&request.name) {
+                    return Ok(CallToolResult::error(vec![Content::text(format!(
+                        "Tool '{0}' is currently off. Turn it on with  toggle {{\"target\":\"{0}\",\"on\":true}}  (or toggle its whole category), or call it once via  act {{\"tool\":\"{0}\",\"args\":{{…}}}}.",
+                        request.name
+                    ))]));
+                }
+                let tcc = ToolCallContext::new(self, request, context);
+                router.call(tcc).await
+            }
+        }
+    }
+
+    async fn list_resources(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListResourcesResult, McpError> {
+        let resource = RawResource::new(GUIDE_URI, "Calculator usage guide")
+            .with_title("How to use this calculator (toggle & act)")
+            .with_description(
+                "Catalog of every tool category and how to reveal (toggle) or proxy (act) tools.",
+            )
+            .with_mime_type("text/markdown")
+            .no_annotation();
+        Ok(ListResourcesResult::with_all_items(vec![resource]))
+    }
+
+    async fn read_resource(
+        &self,
+        request: ReadResourceRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ReadResourceResult, McpError> {
+        if request.uri == GUIDE_URI {
+            Ok(ReadResourceResult::new(vec![ResourceContents::text(
+                registry::guide_markdown(),
+                GUIDE_URI,
+            )]))
+        } else {
+            Err(McpError::resource_not_found(
+                format!("Unknown resource: {}", request.uri),
+                None,
+            ))
+        }
+    }
+
+    fn on_initialized(
+        &self,
+        context: NotificationContext<RoleServer>,
+    ) -> impl std::future::Future<Output = ()> + MaybeSendFuture + '_ {
+        // Capture the peer so `toggle` can emit `tools/list_changed` itself.
+        let _ = self.peer.set(context.peer.clone());
+        std::future::ready(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::Duration;
+
+    use rmcp::{ClientHandler, RoleClient, ServiceExt, service::NotificationContext as ClientNotificationContext};
+    use tokio::sync::Notify;
+
+    /// Minimal client that counts `tools/list_changed` notifications.
+    #[derive(Clone)]
+    struct CountingClient {
+        count: Arc<AtomicUsize>,
+        notify: Arc<Notify>,
+    }
+
+    impl ClientHandler for CountingClient {
+        fn on_tool_list_changed(
+            &self,
+            _context: ClientNotificationContext<RoleClient>,
+        ) -> impl std::future::Future<Output = ()> + MaybeSendFuture + '_ {
+            self.count.fetch_add(1, Ordering::SeqCst);
+            self.notify.notify_one();
+            std::future::ready(())
+        }
+    }
+
+    fn args(v: serde_json::Value) -> Option<JsonObject> {
+        v.as_object().cloned()
+    }
+
+    fn text_of(result: &CallToolResult) -> String {
+        serde_json::to_string(&result.content).unwrap()
+    }
+
+    #[tokio::test]
+    async fn toggle_gates_visibility_notifies_once_and_act_is_independent() {
+        let (server_transport, client_transport) = tokio::io::duplex(8192);
+
+        let server_handle =
+            tokio::spawn(async move { Calculator::new().serve(server_transport).await });
+
+        let client = CountingClient {
+            count: Arc::new(AtomicUsize::new(0)),
+            notify: Arc::new(Notify::new()),
+        };
+        let count = client.count.clone();
+        let notified = client.notify.clone();
+        let client = client.serve(client_transport).await.unwrap();
+        let peer = client.peer();
+
+        // Default: only the two meta-tools are visible.
+        let tools = peer.list_tools(None).await.unwrap();
+        assert_eq!(tools.tools.len(), 2);
+        let mut names: Vec<_> = tools.tools.iter().map(|t| t.name.as_ref()).collect();
+        names.sort_unstable();
+        assert_eq!(names, vec!["act", "toggle"]);
+
+        // `act` reaches a tool that is currently toggled OFF.
+        let mut req = CallToolRequestParams::new("act");
+        req.arguments = args(serde_json::json!({
+            "tool": "trigonometry",
+            "args": {"operation": "sin", "value": 90, "angle_unit": "degrees"}
+        }));
+        let res = peer.call_tool(req).await.unwrap();
+        assert_ne!(res.is_error, Some(true));
+        assert!(text_of(&res).contains("= 1"), "act result: {}", text_of(&res));
+
+        // Toggle a whole category on.
+        let mut req = CallToolRequestParams::new("toggle");
+        req.arguments = args(serde_json::json!({"target": "geometry", "on": true}));
+        peer.call_tool(req).await.unwrap();
+
+        // Exactly one list_changed notification per toggle command.
+        tokio::time::timeout(Duration::from_secs(5), notified.notified())
+            .await
+            .expect("expected tools/list_changed");
+        assert_eq!(count.load(Ordering::SeqCst), 1);
+
+        // The geometry tools are now visible with their real schemas.
+        let tools = peer.list_tools(None).await.unwrap();
+        assert_eq!(tools.tools.len(), 8);
+        assert!(tools.tools.iter().any(|t| t.name == "area_2d"));
+
+        // A disabled tool called directly returns a helpful error, not a result.
+        let mut req = CallToolRequestParams::new("logarithm");
+        req.arguments = args(serde_json::json!({"operation": "ln", "value": 1.0}));
+        let res = peer.call_tool(req).await.unwrap();
+        assert_eq!(res.is_error, Some(true));
+        assert!(text_of(&res).contains("currently off"));
+
+        // Toggle back off → list shrinks to the meta-tools again.
+        let mut req = CallToolRequestParams::new("toggle");
+        req.arguments = args(serde_json::json!({"target": "geometry", "on": false}));
+        peer.call_tool(req).await.unwrap();
+        tokio::time::timeout(Duration::from_secs(5), notified.notified())
+            .await
+            .expect("expected tools/list_changed on disable");
+        let tools = peer.list_tools(None).await.unwrap();
+        assert_eq!(tools.tools.len(), 2);
+
+        client.cancel().await.unwrap();
+        server_handle.abort();
+    }
+
+    #[tokio::test]
+    async fn guide_resource_is_readable() {
+        let (server_transport, client_transport) = tokio::io::duplex(8192);
+        let server_handle =
+            tokio::spawn(async move { Calculator::new().serve(server_transport).await });
+        let client = ().serve(client_transport).await.unwrap();
+        let peer = client.peer();
+
+        let resources = peer.list_resources(None).await.unwrap();
+        assert_eq!(resources.resources.len(), 1);
+        assert_eq!(resources.resources[0].uri, GUIDE_URI);
+
+        let read = peer
+            .read_resource(ReadResourceRequestParams::new(GUIDE_URI))
+            .await
+            .unwrap();
+        let text = match &read.contents[0] {
+            ResourceContents::TextResourceContents { text, .. } => text.clone(),
+            _ => panic!("expected text resource"),
+        };
+        assert!(text.contains("toggle"));
+        assert!(text.contains("geometry"));
+
+        client.cancel().await.unwrap();
+        server_handle.abort();
     }
 }
