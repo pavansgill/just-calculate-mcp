@@ -14,17 +14,23 @@ macro_rules! require {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct PresentFutureValueInput {
-    #[schemars(description = "Operation: present_value, future_value, npv, annuity_pv, annuity_payment")]
+    #[schemars(
+        description = "Operation: present_value, future_value, npv, annuity_pv, annuity_payment"
+    )]
     pub operation: String,
     #[schemars(description = "Periodic interest rate (e.g. 0.05 for 5%)")]
     pub rate: Option<f64>,
     #[schemars(description = "Number of periods")]
     pub periods: Option<f64>,
-    #[schemars(description = "Present value (present_value op: ignored; future_value: initial amount; annuity_pv: payment amount)")]
+    #[schemars(
+        description = "Present value (present_value op: ignored; future_value: initial amount; annuity_pv: payment amount)"
+    )]
     pub present_value: Option<f64>,
     #[schemars(description = "Future value (present_value: target; future_value: ignored)")]
     pub future_value: Option<f64>,
-    #[schemars(description = "Cash flows list for npv (first element is initial investment as negative)")]
+    #[schemars(
+        description = "Cash flows list for npv (first element is initial investment as negative)"
+    )]
     pub cash_flows: Option<Vec<f64>>,
 }
 
@@ -73,7 +79,9 @@ pub fn present_future_value(input: PresentFutureValueInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct InterestRateInput {
-    #[schemars(description = "Operation: simple_interest, compound_interest, effective_annual_rate, continuous_compounding, apr_to_apy, apy_to_apr")]
+    #[schemars(
+        description = "Operation: simple_interest, compound_interest, effective_annual_rate, continuous_compounding, apr_to_apy, apy_to_apr"
+    )]
     pub operation: String,
     #[schemars(description = "Principal amount")]
     pub principal: Option<f64>,
@@ -81,7 +89,9 @@ pub struct InterestRateInput {
     pub rate: Option<f64>,
     #[schemars(description = "Time in years")]
     pub time: Option<f64>,
-    #[schemars(description = "Compounding periods per year (compound_interest, effective_annual_rate, apr_to_apy)")]
+    #[schemars(
+        description = "Compounding periods per year (compound_interest, effective_annual_rate, apr_to_apy)"
+    )]
     pub compounds_per_year: Option<f64>,
 }
 
@@ -194,7 +204,9 @@ pub struct InvestmentReturnInput {
 pub fn investment_return(input: InvestmentReturnInput) -> String {
     let iv = input.initial_value;
     let fv = input.final_value;
-    if iv == 0.0 { return "Error: initial_value cannot be zero".to_string(); }
+    if iv == 0.0 {
+        return "Error: initial_value cannot be zero".to_string();
+    }
 
     match input.operation.as_str() {
         "roi" => {
@@ -202,12 +214,18 @@ pub fn investment_return(input: InvestmentReturnInput) -> String {
             format!("ROI = {roi:.4}%")
         }
         "cagr" => {
-            let years = match input.years { Some(y) if y > 0.0 => y, _ => return "Error: years must be > 0".to_string() };
+            let years = match input.years {
+                Some(y) if y > 0.0 => y,
+                _ => return "Error: years must be > 0".to_string(),
+            };
             let cagr = (fv / iv).powf(1.0 / years) - 1.0;
             format!("CAGR = {cagr:.6} ({:.4}%)", cagr * 100.0)
         }
         "annualized_return" => {
-            let years = match input.years { Some(y) if y > 0.0 => y, _ => return "Error: years must be > 0".to_string() };
+            let years = match input.years {
+                Some(y) if y > 0.0 => y,
+                _ => return "Error: years must be > 0".to_string(),
+            };
             let total_return = (fv - iv) / iv;
             let ann = (1.0 + total_return).powf(1.0 / years) - 1.0;
             format!("annualized_return = {ann:.6} ({:.4}%)", ann * 100.0)
@@ -220,7 +238,9 @@ pub fn investment_return(input: InvestmentReturnInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct DepreciationInput {
-    #[schemars(description = "Operation: straight_line, declining_balance, double_declining, sum_of_years_digits")]
+    #[schemars(
+        description = "Operation: straight_line, declining_balance, double_declining, sum_of_years_digits"
+    )]
     pub operation: String,
     #[schemars(description = "Initial asset cost")]
     pub cost: f64,
@@ -240,8 +260,12 @@ pub fn depreciation(input: DepreciationInput) -> String {
     let life = input.life_years as f64;
     let year = input.year.unwrap_or(1) as f64;
 
-    if cost < salvage { return "Error: cost must be >= salvage".to_string(); }
-    if input.life_years == 0 { return "Error: life_years must be > 0".to_string(); }
+    if cost < salvage {
+        return "Error: cost must be >= salvage".to_string();
+    }
+    if input.life_years == 0 {
+        return "Error: life_years must be > 0".to_string();
+    }
 
     match input.operation.as_str() {
         "straight_line" => {
@@ -275,11 +299,17 @@ pub fn depreciation(input: DepreciationInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct BusinessMathInput {
-    #[schemars(description = "Operation: percent_change, markup, gross_margin, discount, sales_tax, tip, break_even")]
+    #[schemars(
+        description = "Operation: percent_change, markup, gross_margin, discount, sales_tax, tip, break_even"
+    )]
     pub operation: String,
-    #[schemars(description = "Primary value (old value for percent_change, cost for markup/gross_margin, original price for discount/sales_tax/tip, fixed_costs for break_even)")]
+    #[schemars(
+        description = "Primary value (old value for percent_change, cost for markup/gross_margin, original price for discount/sales_tax/tip, fixed_costs for break_even)"
+    )]
     pub value_a: f64,
-    #[schemars(description = "Secondary value (new value for percent_change, selling price for markup/gross_margin, rate for discount/sales_tax/tip, contribution_margin_per_unit for break_even)")]
+    #[schemars(
+        description = "Secondary value (new value for percent_change, selling price for markup/gross_margin, rate for discount/sales_tax/tip, contribution_margin_per_unit for break_even)"
+    )]
     pub value_b: f64,
 }
 
@@ -327,34 +357,52 @@ mod tests {
     #[test]
     fn test_future_value() {
         let r = present_future_value(PresentFutureValueInput {
-            operation: "future_value".to_string(), rate: Some(0.1), periods: Some(1.0),
-            present_value: Some(1000.0), future_value: None, cash_flows: None,
+            operation: "future_value".to_string(),
+            rate: Some(0.1),
+            periods: Some(1.0),
+            present_value: Some(1000.0),
+            future_value: None,
+            cash_flows: None,
         });
         assert!(r.contains("1100"), "{r}");
     }
     #[test]
     fn test_simple_interest() {
         let r = interest_rate(InterestRateInput {
-            operation: "simple_interest".to_string(), principal: Some(1000.0),
-            rate: Some(0.05), time: Some(2.0), compounds_per_year: None,
+            operation: "simple_interest".to_string(),
+            principal: Some(1000.0),
+            rate: Some(0.05),
+            time: Some(2.0),
+            compounds_per_year: None,
         });
         assert!(r.contains("100"), "{r}");
     }
     #[test]
     fn test_roi() {
         let r = investment_return(InvestmentReturnInput {
-            operation: "roi".to_string(), initial_value: 1000.0, final_value: 1200.0, years: None,
+            operation: "roi".to_string(),
+            initial_value: 1000.0,
+            final_value: 1200.0,
+            years: None,
         });
         assert!(r.contains("20"), "{r}");
     }
     #[test]
     fn test_percent_change() {
-        let r = business_math(BusinessMathInput { operation: "percent_change".to_string(), value_a: 100.0, value_b: 125.0 });
+        let r = business_math(BusinessMathInput {
+            operation: "percent_change".to_string(),
+            value_a: 100.0,
+            value_b: 125.0,
+        });
         assert!(r.contains("25"), "{r}");
     }
     #[test]
     fn test_break_even() {
-        let r = business_math(BusinessMathInput { operation: "break_even".to_string(), value_a: 10000.0, value_b: 50.0 });
+        let r = business_math(BusinessMathInput {
+            operation: "break_even".to_string(),
+            value_a: 10000.0,
+            value_b: 50.0,
+        });
         assert!(r.contains("200"), "{r}");
     }
 }

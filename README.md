@@ -1,5 +1,8 @@
 # just-calculate-mcp
 
+[![CI](https://github.com/pavansgill/just-calculate-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pavansgill/just-calculate-mcp/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 A Rust [Model Context Protocol](https://modelcontextprotocol.io) server that gives
 an AI assistant a real calculator — **45 math tools across 17 domains**, from
 arithmetic and trigonometry to finance, linear algebra, statistics, and bitwise

@@ -5,15 +5,23 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct ComplexNumberInput {
-    #[schemars(description = "Operation: add, subtract, multiply, divide, conjugate, magnitude, phase_rad, phase_deg, polar_to_rect, rect_to_polar")]
+    #[schemars(
+        description = "Operation: add, subtract, multiply, divide, conjugate, magnitude, phase_rad, phase_deg, polar_to_rect, rect_to_polar"
+    )]
     pub operation: String,
     #[schemars(description = "Real part of first complex number (or magnitude for polar_to_rect)")]
     pub re1: f64,
-    #[schemars(description = "Imaginary part of first complex number (or angle in degrees for polar_to_rect)")]
+    #[schemars(
+        description = "Imaginary part of first complex number (or angle in degrees for polar_to_rect)"
+    )]
     pub im1: f64,
-    #[schemars(description = "Real part of second complex number (required for add, subtract, multiply, divide)")]
+    #[schemars(
+        description = "Real part of second complex number (required for add, subtract, multiply, divide)"
+    )]
     pub re2: Option<f64>,
-    #[schemars(description = "Imaginary part of second complex number (required for add, subtract, multiply, divide)")]
+    #[schemars(
+        description = "Imaginary part of second complex number (required for add, subtract, multiply, divide)"
+    )]
     pub im2: Option<f64>,
 }
 
@@ -23,7 +31,11 @@ pub fn complex_number(input: ComplexNumberInput) -> String {
     let d = input.im2.unwrap_or(0.0);
 
     let fmt = |re: f64, im: f64| -> String {
-        if im >= 0.0 { format!("{re} + {im}i") } else { format!("{re} - {}i", im.abs()) }
+        if im >= 0.0 {
+            format!("{re} + {im}i")
+        } else {
+            format!("{re} - {}i", im.abs())
+        }
     };
 
     match input.operation.as_str() {
@@ -78,39 +90,46 @@ pub struct ElectricalInput {
 
 pub fn electrical(input: ElectricalInput) -> String {
     match input.operation.as_str() {
-        "ohms_law" => {
-            match (input.voltage, input.current, input.resistance) {
-                (None, Some(i), Some(r)) => format!("V = I × R = {i} × {r} = {}", i * r),
-                (Some(v), None, Some(r)) => {
-                    if r == 0.0 { return "Error: resistance cannot be zero".to_string(); }
-                    format!("I = V / R = {v} / {r} = {}", v / r)
+        "ohms_law" => match (input.voltage, input.current, input.resistance) {
+            (None, Some(i), Some(r)) => format!("V = I × R = {i} × {r} = {}", i * r),
+            (Some(v), None, Some(r)) => {
+                if r == 0.0 {
+                    return "Error: resistance cannot be zero".to_string();
                 }
-                (Some(v), Some(i), None) => {
-                    if i == 0.0 { return "Error: current cannot be zero".to_string(); }
-                    format!("R = V / I = {v} / {i} = {}", v / i)
-                }
-                _ => "Error: provide exactly two of voltage, current, resistance".to_string(),
+                format!("I = V / R = {v} / {r} = {}", v / r)
             }
-        }
-        "power_law" => {
-            match (input.power, input.voltage, input.current, input.resistance) {
-                (None, Some(v), Some(i), None) => format!("P = V × I = {v} × {i} = {}", v * i),
-                (None, Some(v), None, Some(r)) => {
-                    if r == 0.0 { return "Error: resistance cannot be zero".to_string(); }
-                    format!("P = V² / R = {v}² / {r} = {}", v * v / r)
+            (Some(v), Some(i), None) => {
+                if i == 0.0 {
+                    return "Error: current cannot be zero".to_string();
                 }
-                (None, None, Some(i), Some(r)) => format!("P = I² × R = {i}² × {r} = {}", i * i * r),
-                (Some(p), None, Some(i), None) => {
-                    if i == 0.0 { return "Error: current cannot be zero".to_string(); }
-                    format!("V = P / I = {p} / {i} = {}", p / i)
-                }
-                (Some(p), Some(v), None, None) => {
-                    if v == 0.0 { return "Error: voltage cannot be zero".to_string(); }
-                    format!("I = P / V = {p} / {v} = {}", p / v)
-                }
-                _ => "Error: provide exactly two known values (power, voltage, current, or resistance)".to_string(),
+                format!("R = V / I = {v} / {i} = {}", v / i)
             }
-        }
+            _ => "Error: provide exactly two of voltage, current, resistance".to_string(),
+        },
+        "power_law" => match (input.power, input.voltage, input.current, input.resistance) {
+            (None, Some(v), Some(i), None) => format!("P = V × I = {v} × {i} = {}", v * i),
+            (None, Some(v), None, Some(r)) => {
+                if r == 0.0 {
+                    return "Error: resistance cannot be zero".to_string();
+                }
+                format!("P = V² / R = {v}² / {r} = {}", v * v / r)
+            }
+            (None, None, Some(i), Some(r)) => format!("P = I² × R = {i}² × {r} = {}", i * i * r),
+            (Some(p), None, Some(i), None) => {
+                if i == 0.0 {
+                    return "Error: current cannot be zero".to_string();
+                }
+                format!("V = P / I = {p} / {i} = {}", p / i)
+            }
+            (Some(p), Some(v), None, None) => {
+                if v == 0.0 {
+                    return "Error: voltage cannot be zero".to_string();
+                }
+                format!("I = P / V = {p} / {v} = {}", p / v)
+            }
+            _ => "Error: provide exactly two known values (power, voltage, current, or resistance)"
+                .to_string(),
+        },
         op => format!("Error: Unknown operation '{op}'. Supported: ohms_law, power_law"),
     }
 }
@@ -119,7 +138,9 @@ pub fn electrical(input: ElectricalInput) -> String {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct DecibelInput {
-    #[schemars(description = "Operation: power_ratio_to_db, db_to_power_ratio, voltage_ratio_to_db, db_to_voltage_ratio")]
+    #[schemars(
+        description = "Operation: power_ratio_to_db, db_to_power_ratio, voltage_ratio_to_db, db_to_voltage_ratio"
+    )]
     pub operation: String,
     #[schemars(description = "Input value (ratio or dB depending on operation)")]
     pub value: f64,
@@ -187,30 +208,54 @@ mod tests {
     #[test]
     fn test_complex_multiply() {
         let r = complex_number(ComplexNumberInput {
-            operation: "multiply".to_string(), re1: 1.0, im1: 2.0, re2: Some(3.0), im2: Some(4.0),
+            operation: "multiply".to_string(),
+            re1: 1.0,
+            im1: 2.0,
+            re2: Some(3.0),
+            im2: Some(4.0),
         });
         assert!(r.contains("-5") || r.contains("-5.0"), "{r}");
     }
     #[test]
     fn test_complex_magnitude() {
         let r = complex_number(ComplexNumberInput {
-            operation: "magnitude".to_string(), re1: 3.0, im1: 4.0, re2: None, im2: None,
+            operation: "magnitude".to_string(),
+            re1: 3.0,
+            im1: 4.0,
+            re2: None,
+            im2: None,
         });
         assert!(r.contains("5"), "{r}");
     }
     #[test]
     fn test_ohms_law_voltage() {
-        let r = electrical(ElectricalInput { operation: "ohms_law".to_string(), voltage: None, current: Some(2.0), resistance: Some(5.0), power: None });
+        let r = electrical(ElectricalInput {
+            operation: "ohms_law".to_string(),
+            voltage: None,
+            current: Some(2.0),
+            resistance: Some(5.0),
+            power: None,
+        });
         assert!(r.contains("10"), "{r}");
     }
     #[test]
     fn test_power_ratio_to_db() {
-        let r = decibel(DecibelInput { operation: "power_ratio_to_db".to_string(), value: 100.0 });
+        let r = decibel(DecibelInput {
+            operation: "power_ratio_to_db".to_string(),
+            value: 100.0,
+        });
         assert!(r.contains("20"), "{r}");
     }
     #[test]
     fn test_lerp() {
-        let r = interpolation(InterpolationInput { operation: "lerp".to_string(), x1: 0.0, y1: 10.0, x2: None, y2: None, x: 0.5 });
+        let r = interpolation(InterpolationInput {
+            operation: "lerp".to_string(),
+            x1: 0.0,
+            y1: 10.0,
+            x2: None,
+            y2: None,
+            x: 0.5,
+        });
         assert!(r.contains("5"), "{r}");
     }
 }

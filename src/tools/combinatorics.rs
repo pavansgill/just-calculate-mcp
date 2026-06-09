@@ -1,14 +1,18 @@
+use crate::tools::shared::factorial;
 use schemars::JsonSchema;
 use serde::Deserialize;
-use crate::tools::shared::factorial;
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct CombinatoricsInput {
-    #[schemars(description = "Operation: factorial, double_factorial, permutations, combinations, binomial_coeff, catalan")]
+    #[schemars(
+        description = "Operation: factorial, double_factorial, permutations, combinations, binomial_coeff, catalan"
+    )]
     pub operation: String,
     #[schemars(description = "n (primary non-negative integer)")]
     pub n: u64,
-    #[schemars(description = "k (required for permutations, combinations, binomial_coeff; k <= n)")]
+    #[schemars(
+        description = "k (required for permutations, combinations, binomial_coeff; k <= n)"
+    )]
     pub k: Option<u64>,
 }
 
@@ -67,23 +71,43 @@ mod tests {
     use super::*;
 
     fn c(n: u64, op: &str, k: Option<u64>) -> String {
-        combinatorics(CombinatoricsInput { operation: op.to_string(), n, k })
+        combinatorics(CombinatoricsInput {
+            operation: op.to_string(),
+            n,
+            k,
+        })
     }
 
     #[test]
-    fn test_factorial() { assert_eq!(c(5, "factorial", None), "5! = 120"); }
+    fn test_factorial() {
+        assert_eq!(c(5, "factorial", None), "5! = 120");
+    }
     #[test]
-    fn test_factorial_zero() { assert_eq!(c(0, "factorial", None), "0! = 1"); }
+    fn test_factorial_zero() {
+        assert_eq!(c(0, "factorial", None), "0! = 1");
+    }
     #[test]
-    fn test_double_factorial() { assert_eq!(c(5, "double_factorial", None), "5!! = 15"); }
+    fn test_double_factorial() {
+        assert_eq!(c(5, "double_factorial", None), "5!! = 15");
+    }
     #[test]
-    fn test_permutations() { assert!(c(5, "permutations", Some(2)).contains("20")); }
+    fn test_permutations() {
+        assert!(c(5, "permutations", Some(2)).contains("20"));
+    }
     #[test]
-    fn test_combinations() { assert!(c(5, "combinations", Some(2)).contains("10")); }
+    fn test_combinations() {
+        assert!(c(5, "combinations", Some(2)).contains("10"));
+    }
     #[test]
-    fn test_catalan_zero() { assert!(c(0, "catalan", None).contains("1")); }
+    fn test_catalan_zero() {
+        assert!(c(0, "catalan", None).contains("1"));
+    }
     #[test]
-    fn test_catalan_5() { assert!(c(5, "catalan", None).contains("42")); }
+    fn test_catalan_5() {
+        assert!(c(5, "catalan", None).contains("42"));
+    }
     #[test]
-    fn test_k_exceeds_n() { assert!(c(3, "combinations", Some(5)).contains("Error")); }
+    fn test_k_exceeds_n() {
+        assert!(c(3, "combinations", Some(5)).contains("Error"));
+    }
 }
