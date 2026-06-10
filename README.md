@@ -198,17 +198,3 @@ Details in [CLAUDE.md](CLAUDE.md).
 
 Copyright 2026 Pavan Singh Gill. Licensed under the
 [Apache License, Version 2.0](LICENSE).
-
-In plain terms:
-
-- **Use it for anything** — personal, commercial, in a closed product, anywhere.
-- **Patent grant + retaliation** — contributors grant you a patent license for
-  what they contribute, and anyone who weaponizes a patent against the project
-  loses their license. Because the code is published openly, it also stands as
-  **prior art**, which is what actually stops someone patenting these ideas out
-  from under everyone.
-- **No warranty, no liability** — it's provided as-is. Don't sue me if your
-  rocket misses the moon because of a rounding error.
-
-Contributions are welcome and, per Apache-2.0 §5, come in under the same terms.
-This is part of my open-source work — built in the open, given freely. Enjoy it.
